@@ -4,7 +4,6 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AppShell from './components/AppShell'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
-import PlaceholderPage from './pages/PlaceholderPage'
 import RecipesPage from './pages/RecipesPage'
 import CategoriesPage from './pages/CategoriesPage'
 import PantryPage from './pages/PantryPage'
@@ -15,6 +14,7 @@ import MealsPage from './pages/MealsPage'
 import PickerPage from './pages/PickerPage'
 import ReviewPage from './pages/ReviewPage'
 import FinalisePage from './pages/FinalisePage'
+import DashboardPage from './pages/DashboardPage'
 
 export default function App() {
   return (
@@ -33,7 +33,7 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<PlaceholderPage title="Dashboard" />} />
+            <Route index element={<DashboardPage />} />
             <Route path="recipes" element={<RecipesPage />} />
             <Route path="session" element={<SessionPage />} />
             <Route path="meals" element={<MealsPage />} />
