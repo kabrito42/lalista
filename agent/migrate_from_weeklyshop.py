@@ -9,6 +9,7 @@ Usage:
 Requires .env with SUPABASE_URL, SUPABASE_SERVICE_KEY, HOUSEHOLD_ID.
 """
 
+import mimetypes
 import os
 import sqlite3
 from pathlib import Path
@@ -22,7 +23,9 @@ SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
 HOUSEHOLD_ID = os.environ["HOUSEHOLD_ID"]
 
-WEEKLYSHOP_DB = Path.home() / "Development" / "weeklyshop" / "coles_shopper.db"
+WEEKLYSHOP_DIR = Path.home() / "Development" / "weeklyshop"
+WEEKLYSHOP_DB = WEEKLYSHOP_DIR / "coles_shopper.db"
+RECIPE_IMAGES_DIR = WEEKLYSHOP_DIR / "recipe_images"
 
 sb = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -108,21 +111,51 @@ def migrate_longlist(conn, category_map):
     print(f"  Migrated {len(rows)} longlist items")
 
 
+def upload_recipe_image(image_filename: str, new_recipe_id: str) -> str | None:
+    """Upload a recipe image to Supabase Storage and return the public URL."""
+    image_path = RECIPE_IMAGES_DIR / image_filename
+    if not image_path.exists():
+        print(f"    ! Image not found: {image_filename}")
+        return None
+
+    # Use new recipe ID in the storage path for clean naming
+    ext = image_path.suffix
+    storage_path = f"{HOUSEHOLD_ID}/{new_recipe_id}{ext}"
+    content_type = mimetypes.guess_type(str(image_path))[0] or "image/jpeg"
+
+    try:
+        with open(image_path, "rb") as f:
+            sb.storage.from_("recipe-images").upload(
+                storage_path,
+                f.read(),
+                {"content-type": content_type, "upsert": "true"},
+            )
+        public_url = f"{SUPABASE_URL}/storage/v1/object/public/recipe-images/{storage_path}"
+        print(f"    Uploaded: {image_filename} → {storage_path}")
+        return public_url
+    except Exception as e:
+        print(f"    ! Upload failed for {image_filename}: {e}")
+        return None
+
+
 def migrate_recipes(conn):
     print("\n--- Recipes ---")
     rows = conn.execute("""
-        SELECT id, name, servings, prep_time, cook_time, source_url, directions, notes
+        SELECT id, name, servings, prep_time, cook_time, source_url, directions, notes, image_path
         FROM recipes ORDER BY name
     """).fetchall()
     print(f"  Found {len(rows)} recipes in weeklyshop")
 
-    sb.table("recipe_ingredients").delete().in_(
-        "recipe_id",
-        [r["id"] for r in sb.table("recipes").select("id").eq("household_id", HOUSEHOLD_ID).execute().data]
-    ).execute() if sb.table("recipes").select("id").eq("household_id", HOUSEHOLD_ID).execute().data else None
+    # Clean existing recipes and their ingredients
+    existing = sb.table("recipes").select("id").eq("household_id", HOUSEHOLD_ID).execute().data
+    if existing:
+        sb.table("recipe_ingredients").delete().in_(
+            "recipe_id", [r["id"] for r in existing]
+        ).execute()
     sb.table("recipes").delete().eq("household_id", HOUSEHOLD_ID).execute()
 
     old_to_new = {}
+    images_uploaded = 0
     for row in rows:
         result = sb.table("recipes").insert({
             "household_id": HOUSEHOLD_ID,
@@ -134,10 +167,19 @@ def migrate_recipes(conn):
             "directions": row["directions"],
             "notes": row["notes"],
         }).execute()
-        old_to_new[row["id"]] = result.data[0]["id"]
+        new_id = result.data[0]["id"]
+        old_to_new[row["id"]] = new_id
+
+        # Upload image if present
+        if row.get("image_path"):
+            image_url = upload_recipe_image(row["image_path"], new_id)
+            if image_url:
+                sb.table("recipes").update({"image_url": image_url}).eq("id", new_id).execute()
+                images_uploaded += 1
+
         print(f"  + {row['name']}")
 
-    print(f"  Migrated {len(rows)} recipes")
+    print(f"  Migrated {len(rows)} recipes, {images_uploaded} images uploaded")
     return old_to_new
 
 
