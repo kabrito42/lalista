@@ -10,6 +10,11 @@ import CategoriesPage from './pages/CategoriesPage'
 import PantryPage from './pages/PantryPage'
 import LonglistPage from './pages/LonglistPage'
 import ColesPreferencesPage from './pages/ColesPreferencesPage'
+import SessionPage from './pages/SessionPage'
+import MealsPage from './pages/MealsPage'
+import PickerPage from './pages/PickerPage'
+import ReviewPage from './pages/ReviewPage'
+import FinalisePage from './pages/FinalisePage'
 
 export default function App() {
   return (
@@ -30,11 +35,11 @@ export default function App() {
           >
             <Route index element={<PlaceholderPage title="Dashboard" />} />
             <Route path="recipes" element={<RecipesPage />} />
-            <Route path="session" element={<PlaceholderPage title="Weekly Session" />} />
-            <Route path="meals" element={<PlaceholderPage title="Meals" />} />
-            <Route path="picker" element={<PlaceholderPage title="Item Picker" />} />
-            <Route path="review" element={<PlaceholderPage title="Review & Merge" />} />
-            <Route path="finalise" element={<PlaceholderPage title="Finalise" />} />
+            <Route path="session" element={<SessionPage />} />
+            <Route path="meals" element={<MealsPage />} />
+            <Route path="picker" element={<PickerPage />} />
+            <Route path="review" element={<ReviewPage />} />
+            <Route path="finalise" element={<FinalisePage />} />
             <Route path="longlist" element={<LonglistPage />} />
             <Route path="pantry" element={<PantryPage />} />
             <Route path="categories" element={<CategoriesPage />} />
