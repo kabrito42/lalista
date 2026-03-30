@@ -5,6 +5,11 @@ import AppShell from './components/AppShell'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import RecipesPage from './pages/RecipesPage'
+import CategoriesPage from './pages/CategoriesPage'
+import PantryPage from './pages/PantryPage'
+import LonglistPage from './pages/LonglistPage'
+import ColesPreferencesPage from './pages/ColesPreferencesPage'
 
 export default function App() {
   return (
@@ -24,19 +29,16 @@ export default function App() {
             }
           >
             <Route index element={<PlaceholderPage title="Dashboard" />} />
-            <Route path="recipes" element={<PlaceholderPage title="Recipes" />} />
+            <Route path="recipes" element={<RecipesPage />} />
             <Route path="session" element={<PlaceholderPage title="Weekly Session" />} />
             <Route path="meals" element={<PlaceholderPage title="Meals" />} />
             <Route path="picker" element={<PlaceholderPage title="Item Picker" />} />
             <Route path="review" element={<PlaceholderPage title="Review & Merge" />} />
             <Route path="finalise" element={<PlaceholderPage title="Finalise" />} />
-            <Route path="longlist" element={<PlaceholderPage title="Longlist" />} />
-            <Route path="pantry" element={<PlaceholderPage title="Pantry" />} />
-            <Route path="categories" element={<PlaceholderPage title="Categories" />} />
-            <Route
-              path="coles-preferences"
-              element={<PlaceholderPage title="Coles Preferences" />}
-            />
+            <Route path="longlist" element={<LonglistPage />} />
+            <Route path="pantry" element={<PantryPage />} />
+            <Route path="categories" element={<CategoriesPage />} />
+            <Route path="coles-preferences" element={<ColesPreferencesPage />} />
           </Route>
 
           {/* Catch-all */}
