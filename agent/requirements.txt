@@ -1,3 +1,5 @@
 playwright
 supabase
 pyobjc
+playwright-stealth
+python-dotenv

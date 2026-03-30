@@ -23,6 +23,9 @@ __pycache__/
 .venv/
 venv/
 
+# Agent
+agent/coles_session.json
+
 # Supabase local
 supabase/.temp/
 

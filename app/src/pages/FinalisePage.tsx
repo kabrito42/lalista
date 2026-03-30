@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useHousehold } from '../hooks/useHousehold'
+import AutomationLogViewer from '../components/AutomationLogViewer'
 import type { Database } from '../types/database'
 
 type Session = Database['public']['Tables']['weekly_sessions']['Row']
@@ -18,6 +19,8 @@ export default function FinalisePage() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [dispatching, setDispatching] = useState(false)
+  const [showLogs, setShowLogs] = useState(false)
   const [error, setError] = useState('')
 
   const fetchSession = useCallback(async () => {
@@ -153,19 +156,39 @@ export default function FinalisePage() {
             </button>
 
             <button
-              disabled
-              className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-light opacity-50"
-              title="Agent not connected — wired in Phase 4"
+              onClick={async () => {
+                if (!session || session.coles_dispatched) return
+                setDispatching(true)
+                setShowLogs(true)
+                setError('')
+                // The agent polls for finalised sessions with coles_dispatched=false
+                // Just ensure the session is finalised — agent picks it up automatically
+                if (session.status !== 'finalised' && session.status !== 'dispatched') {
+                  const { error } = await supabase.rpc('advance_session', { p_session_id: session.id })
+                  if (error) {
+                    setError(error.message)
+                    setDispatching(false)
+                    return
+                  }
+                }
+                setDispatching(false)
+                fetchSession()
+              }}
+              disabled={dispatching || session.coles_dispatched}
+              className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+                session.coles_dispatched
+                  ? 'border-accent/20 bg-accent-light text-accent'
+                  : 'border-border bg-surface text-text hover:bg-surface-alt'
+              }`}
             >
-              Dispatch to Coles
+              {session.coles_dispatched ? 'Dispatched ✓' : dispatching ? 'Dispatching...' : 'Dispatch to Coles'}
             </button>
 
             <button
-              disabled
-              className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-light opacity-50"
-              title="Agent not connected — wired in Phase 4"
+              onClick={() => setShowLogs(!showLogs)}
+              className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-mid transition-colors hover:bg-surface-alt"
             >
-              Export to Apple Reminders
+              {showLogs ? 'Hide Logs' : 'Show Logs'}
             </button>
 
             {!isFinalised && (
@@ -177,6 +200,13 @@ export default function FinalisePage() {
               </button>
             )}
           </div>
+
+          {/* Automation log viewer */}
+          {showLogs && session && (
+            <div className="mt-6">
+              <AutomationLogViewer sessionId={session.id} />
+            </div>
+          )}
         </>
       )}
     </div>
