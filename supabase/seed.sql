@@ -1,2 +1,106 @@
 -- Seed data for local development
--- Populated in Phase 2
+-- Ported from weeklyshop v1 database.py
+-- This runs after migrations during `supabase db reset`
+
+-- Create a seed household (auth user + profile created on first login via trigger)
+insert into public.households (id, name) values
+  ('00000000-0000-0000-0000-000000000001', 'Seed Household');
+
+-- 16 Categories (with sort_order)
+insert into public.categories (household_id, name, sort_order, is_default) values
+  ('00000000-0000-0000-0000-000000000001', 'Produce', 0, true),
+  ('00000000-0000-0000-0000-000000000001', 'Dairy & Eggs', 1, true),
+  ('00000000-0000-0000-0000-000000000001', 'Crackers & Biscuits', 2, true),
+  ('00000000-0000-0000-0000-000000000001', 'Snacks & Confectionery', 3, true),
+  ('00000000-0000-0000-0000-000000000001', 'Bakery', 4, true),
+  ('00000000-0000-0000-0000-000000000001', 'Beverages', 5, true),
+  ('00000000-0000-0000-0000-000000000001', 'Deli & Chilled', 6, true),
+  ('00000000-0000-0000-0000-000000000001', 'Frozen', 7, true),
+  ('00000000-0000-0000-0000-000000000001', 'Household', 8, true),
+  ('00000000-0000-0000-0000-000000000001', 'Personal Care', 9, true),
+  ('00000000-0000-0000-0000-000000000001', 'Spreads & Condiments', 10, true),
+  ('00000000-0000-0000-0000-000000000001', 'Soups', 11, true),
+  ('00000000-0000-0000-0000-000000000001', 'Canned Food', 12, true),
+  ('00000000-0000-0000-0000-000000000001', 'Breakfast & Cereals', 13, true),
+  ('00000000-0000-0000-0000-000000000001', 'Pet', 14, true),
+  ('00000000-0000-0000-0000-000000000001', 'Meat', 15, true);
+
+-- 20 Pantry Items
+insert into public.pantry_items (household_id, name) values
+  ('00000000-0000-0000-0000-000000000001', 'salt'),
+  ('00000000-0000-0000-0000-000000000001', 'pepper'),
+  ('00000000-0000-0000-0000-000000000001', 'plain flour'),
+  ('00000000-0000-0000-0000-000000000001', 'self-raising flour'),
+  ('00000000-0000-0000-0000-000000000001', 'sugar'),
+  ('00000000-0000-0000-0000-000000000001', 'brown sugar'),
+  ('00000000-0000-0000-0000-000000000001', 'olive oil'),
+  ('00000000-0000-0000-0000-000000000001', 'vegetable oil'),
+  ('00000000-0000-0000-0000-000000000001', 'butter'),
+  ('00000000-0000-0000-0000-000000000001', 'eggs'),
+  ('00000000-0000-0000-0000-000000000001', 'milk'),
+  ('00000000-0000-0000-0000-000000000001', 'garlic'),
+  ('00000000-0000-0000-0000-000000000001', 'onion'),
+  ('00000000-0000-0000-0000-000000000001', 'rice'),
+  ('00000000-0000-0000-0000-000000000001', 'pasta'),
+  ('00000000-0000-0000-0000-000000000001', 'soy sauce'),
+  ('00000000-0000-0000-0000-000000000001', 'vinegar'),
+  ('00000000-0000-0000-0000-000000000001', 'baking powder'),
+  ('00000000-0000-0000-0000-000000000001', 'bicarbonate of soda'),
+  ('00000000-0000-0000-0000-000000000001', 'vanilla extract');
+
+-- ~54 Longlist Items (with category references via subselect)
+insert into public.longlist_items (household_id, name, category_id, default_qty, unit, is_staple) values
+  ('00000000-0000-0000-0000-000000000001', 'Applaws Natural Wet Cat Food Chicken Breast 70g', (select id from public.categories where name = 'Pet' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false),
+  ('00000000-0000-0000-0000-000000000001', 'Arnott''s Jatz Original Crackers 225g', (select id from public.categories where name = 'Crackers & Biscuits' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Arnott''s Scotch Finger Biscuits 250g', (select id from public.categories where name = 'Crackers & Biscuits' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Arnott''s Shapes Vegemite & Cheese 175g', (select id from public.categories where name = 'Crackers & Biscuits' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Bakers Delight Vegemite and Cheese Scroll', (select id from public.categories where name = 'Bakery' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'each', true),
+  ('00000000-0000-0000-0000-000000000001', 'Bonne Maman Raspberry Conserve 370g', (select id from public.categories where name = 'Spreads & Condiments' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'jar', false),
+  ('00000000-0000-0000-0000-000000000001', 'Bonne Maman Strawberry Conserve 370g', (select id from public.categories where name = 'Spreads & Condiments' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'jar', false),
+  ('00000000-0000-0000-0000-000000000001', 'Cadbury Crunchie Chocolate Block 180g', (select id from public.categories where name = 'Snacks & Confectionery' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'block', false),
+  ('00000000-0000-0000-0000-000000000001', 'Campbell''s Soup Sensations Pumpkin 500ml', (select id from public.categories where name = 'Soups' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'can', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coca-Cola Zero Sugar 10x375ml Cans', (select id from public.categories where name = 'Beverages' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Baked Sweet Chilli Chips 100g', (select id from public.categories where name = 'Snacks & Confectionery' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'bag', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Cheese Cranberry & Sunflower Seed Crackers 100g', (select id from public.categories where name = 'Crackers & Biscuits' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Free Range Eggs 12pk', (select id from public.categories where name = 'Dairy & Eggs' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'dozen', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Garlic Loose', (select id from public.categories where name = 'Produce' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'each', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Iceberg Lettuce Each', (select id from public.categories where name = 'Produce' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'each', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Lebanese Cucumber Each', (select id from public.categories where name = 'Produce' and household_id = '00000000-0000-0000-0000-000000000001'), 2, 'each', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Lemon Barley Cordial 750ml', (select id from public.categories where name = 'Beverages' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'bottle', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Mini Wraps 8pk', (select id from public.categories where name = 'Bakery' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles William Bartlett Pears Medium x 3', (select id from public.categories where name = 'Produce' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Imported Mandarins x 4', (select id from public.categories where name = 'Produce' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Strawberries 250g', (select id from public.categories where name = 'Produce' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'punnet', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Raspberries 170g', (select id from public.categories where name = 'Produce' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'punnet', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coles White Seedless Grapes approx 1kg', (select id from public.categories where name = 'Produce' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'bag', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coles No Fat Skim Milk 2L', (select id from public.categories where name = 'Dairy & Eggs' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'bottle', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Paper Towel 2pk', (select id from public.categories where name = 'Household' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Pretzels Salted 200g', (select id from public.categories where name = 'Snacks & Confectionery' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'bag', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Red Capsicum Each', (select id from public.categories where name = 'Produce' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'each', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Sea Salt Caramel Popcorn 100g', (select id from public.categories where name = 'Snacks & Confectionery' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'bag', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Shredded Mozzarella Cheese 250g', (select id from public.categories where name = 'Dairy & Eggs' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Shredded Parmesan 100g', (select id from public.categories where name = 'Dairy & Eggs' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Shredded Tasty Cheese 250g', (select id from public.categories where name = 'Dairy & Eggs' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Sour Worms 200g', (select id from public.categories where name = 'Snacks & Confectionery' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'bag', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Straight Cut Chips 1kg', (select id from public.categories where name = 'Frozen' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'bag', false),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Tasty Cheese Snack Cubes 175g', (select id from public.categories where name = 'Dairy & Eggs' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Tomatoes 6pk', (select id from public.categories where name = 'Produce' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Coles Water Crackers Original 125g', (select id from public.categories where name = 'Crackers & Biscuits' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false),
+  ('00000000-0000-0000-0000-000000000001', 'Palmolive Naturals Body Wash Pomegranate Mango 500ml', (select id from public.categories where name = 'Personal Care' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'bottle', false),
+  ('00000000-0000-0000-0000-000000000001', 'Pantene Pro-V Classic Clean Shampoo 900ml', (select id from public.categories where name = 'Personal Care' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'bottle', false),
+  ('00000000-0000-0000-0000-000000000001', 'Pantene Conditioner Classic Clean 800ml', (select id from public.categories where name = 'Personal Care' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'bottle', false),
+  ('00000000-0000-0000-0000-000000000001', 'Heidi Farm Cave Aged Cheddar 150g', (select id from public.categories where name = 'Dairy & Eggs' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Heinz Baked Beans in Tomato Sauce 3 Pack', (select id from public.categories where name = 'Canned Food' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Laughing Cow Original Spreadable Cheese Triangles 6pk', (select id from public.categories where name = 'Dairy & Eggs' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false),
+  ('00000000-0000-0000-0000-000000000001', 'Macro Organic Carbonara Bites 200g', (select id from public.categories where name = 'Deli & Chilled' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false),
+  ('00000000-0000-0000-0000-000000000001', 'Nutella Hazelnut Spread 400g', (select id from public.categories where name = 'Spreads & Condiments' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'jar', false),
+  ('00000000-0000-0000-0000-000000000001', 'Peckish Caramelised Onion & Balsamic Vinegar Rice Crackers 90g', (select id from public.categories where name = 'Crackers & Biscuits' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false),
+  ('00000000-0000-0000-0000-000000000001', 'Don Artusi Australian Prosciutto 80g', (select id from public.categories where name = 'Deli & Chilled' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false),
+  ('00000000-0000-0000-0000-000000000001', 'Don Artusi Hungarian Mild Traditional Style 100g', (select id from public.categories where name = 'Deli & Chilled' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false),
+  ('00000000-0000-0000-0000-000000000001', 'Don Artusi Melosi Smokehouse Leg Ham 100g', (select id from public.categories where name = 'Deli & Chilled' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false),
+  ('00000000-0000-0000-0000-000000000001', 'Quilton 3 Ply White Toilet Tissue 12pk', (select id from public.categories where name = 'Household' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', true),
+  ('00000000-0000-0000-0000-000000000001', 'Ribena Blackcurrant Cordial 500ml', (select id from public.categories where name = 'Beverages' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'bottle', false),
+  ('00000000-0000-0000-0000-000000000001', 'Sanitarium Peanut Butter Smooth 500g', (select id from public.categories where name = 'Spreads & Condiments' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'jar', false),
+  ('00000000-0000-0000-0000-000000000001', 'Streets Paddle Pop Rainbow 10pk', (select id from public.categories where name = 'Frozen' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false),
+  ('00000000-0000-0000-0000-000000000001', 'Weetabix Chocolate Cereal 600g', (select id from public.categories where name = 'Breakfast & Cereals' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'box', false),
+  ('00000000-0000-0000-0000-000000000001', 'Weetabix Chocolate Chip Cereal Bars 6pk', (select id from public.categories where name = 'Breakfast & Cereals' and household_id = '00000000-0000-0000-0000-000000000001'), 1, 'pack', false);
