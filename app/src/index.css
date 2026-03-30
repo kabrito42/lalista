@@ -1,0 +1,31 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Fonts */
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-serif: 'DM Serif Display', Georgia, serif;
+  --font-mono: 'DM Mono', monospace;
+
+  /* Colors — from weeklyshop design language */
+  --color-bg: #f7f6f2;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f0ede6;
+  --color-border: #d8d3c8;
+  --color-border-strong: #b8b0a0;
+
+  --color-accent: #2b5e3f;
+  --color-accent-light: #e8f2ec;
+  --color-accent-mid: #4a8a62;
+
+  --color-red: #c0392b;
+  --color-red-light: #fdecea;
+  --color-amber: #d97706;
+  --color-amber-light: #fef3c7;
+  --color-blue: #1d4ed8;
+  --color-blue-light: #eff6ff;
+
+  --color-text: #1c1917;
+  --color-text-mid: #57534e;
+  --color-text-light: #a8a29e;
+  --color-tag: #78716c;
+}
