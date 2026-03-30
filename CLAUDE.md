@@ -103,6 +103,16 @@ The agent is **local-only** — it reads lists from Supabase and drives a browse
 - **Local agent architecture**: browser automation runs on the user's machine for security (grocery store credentials never leave the local machine)
 - **Weeklyshop design language**: reuses the DM Sans/Serif/Mono font stack and green-accent colour palette from weeklyshop
 
+## Testing
+
+```bash
+cd app
+npm run lint         # ESLint (0 errors expected)
+npm run build        # TypeScript + Vite production build
+```
+
+No test framework configured yet. Add `vitest` when unit tests are needed.
+
 ## ClickUp
 
 - Workspace: `90161526129`
