@@ -153,8 +153,15 @@ export default function RecipesPage() {
           {filtered.map((recipe) => (
             <div
               key={recipe.id}
-              className="flex items-start justify-between rounded-xl border border-border bg-surface p-4"
+              className="flex items-start gap-4 rounded-xl border border-border bg-surface p-4"
             >
+              {recipe.image_url && (
+                <img
+                  src={recipe.image_url}
+                  alt={recipe.title}
+                  className="h-20 w-20 shrink-0 rounded-lg object-cover"
+                />
+              )}
               <div className="flex-1">
                 <h3 className="font-semibold text-text">{recipe.title}</h3>
                 <div className="mt-1 flex flex-wrap gap-3 text-xs text-text-light">
