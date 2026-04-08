@@ -1,17 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useHousehold } from '../hooks/useHousehold'
+import { generateFinalList, type ListItem } from '../lib/reviewUtils'
 import type { Database } from '../types/database'
 
 type Session = Database['public']['Tables']['weekly_sessions']['Row']
-
-interface ListItem {
-  name: string
-  quantity: string | number
-  unit: string
-  source: string
-  coles_product?: string
-}
 
 const SOURCE_COLORS: Record<string, string> = {
   meal: 'bg-blue-light text-blue',
@@ -48,7 +41,7 @@ export default function ReviewPage() {
     if (!hhLoading && householdId) fetchSession()
   }, [hhLoading, householdId, fetchSession])
 
-  const generateFinalList = async () => {
+  const handleGenerateFinalList = async () => {
     if (!session || !householdId) return
     setError('')
 
@@ -61,7 +54,6 @@ export default function ReviewPage() {
       ...i,
       source: i.source ?? 'other_items',
     }))
-    const allItems = [...otherItems, ...mealItems]
 
     // Fetch pantry items for exclusion
     const { data: pantry } = await supabase
@@ -70,30 +62,9 @@ export default function ReviewPage() {
       .eq('household_id', householdId)
     const pantryNames = (pantry ?? []).map((p) => p.name.toLowerCase())
 
-    // Simple dedup and pantry exclusion (client-side)
-    const seen = new Map<string, ListItem>()
-    const excluded: string[] = []
-    const duplicates: ListItem[] = []
+    const { finalList, pantryExclusions: excluded, droppedDuplicates: duplicates } =
+      generateFinalList(mealItems, otherItems, pantryNames)
 
-    for (const item of allItems) {
-      const key = item.name.toLowerCase().trim()
-
-      // Check pantry exclusion
-      if (pantryNames.some((p) => key.includes(p) || p.includes(key))) {
-        excluded.push(item.name)
-        continue
-      }
-
-      // Check duplicate
-      if (seen.has(key)) {
-        duplicates.push(item)
-        continue
-      }
-
-      seen.set(key, item)
-    }
-
-    const finalList = Array.from(seen.values())
     setMergedList(finalList)
     setPantryExclusions(excluded)
     setDroppedDuplicates(duplicates)
@@ -146,7 +117,7 @@ export default function ReviewPage() {
       <div className="mb-6 flex items-center justify-between gap-4">
         <h2 className="font-serif text-xl text-text">Review & Merge</h2>
         <button
-          onClick={generateFinalList}
+          onClick={handleGenerateFinalList}
           disabled={!hasSources}
           className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
         >

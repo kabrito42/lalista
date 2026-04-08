@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useHousehold } from '../hooks/useHousehold'
+import { parseFreeformItems } from '../lib/sessionUtils'
 import type { Database } from '../types/database'
 
 type Session = Database['public']['Tables']['weekly_sessions']['Row']
@@ -65,11 +66,7 @@ export default function SessionPage() {
 
   const saveFreeformItems = async () => {
     if (!session || !freeformText.trim()) return
-    const items = freeformText
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((name) => ({ name, quantity: 1, unit: 'each', source: 'manual' }))
+    const items = parseFreeformItems(freeformText)
 
     const existing = (session.confirmed_other_items as Array<Record<string, unknown>>) ?? []
     const merged = [...existing, ...items]

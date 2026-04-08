@@ -1,19 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useHousehold } from '../hooks/useHousehold'
+import { buildInitialSelections, type Selection } from '../lib/pickerUtils'
 import type { Database } from '../types/database'
 
 type LonglistItem = Database['public']['Tables']['longlist_items']['Row']
 type Category = Database['public']['Tables']['categories']['Row']
 type Session = Database['public']['Tables']['weekly_sessions']['Row']
-
-interface Selection {
-  id: string
-  name: string
-  quantity: number
-  unit: string
-  category: string
-}
 
 export default function PickerPage() {
   const { householdId, loading: hhLoading } = useHousehold()
@@ -43,20 +36,7 @@ export default function PickerPage() {
     setSession(sessionRes.data)
 
     // Pre-select staple items
-    const initial = new Map<string, Selection>()
-    for (const item of itemsRes.data ?? []) {
-      if (item.is_staple) {
-        const cat = (catsRes.data ?? []).find((c) => c.id === item.category_id)
-        initial.set(item.id, {
-          id: item.id,
-          name: item.name,
-          quantity: item.default_qty,
-          unit: item.unit ?? 'each',
-          category: cat?.name ?? 'Uncategorised',
-        })
-      }
-    }
-    setSelections(initial)
+    setSelections(buildInitialSelections(itemsRes.data ?? [], catsRes.data ?? []))
     setLoading(false)
   }, [householdId])
 

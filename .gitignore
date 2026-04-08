@@ -32,3 +32,7 @@ supabase/.temp/
 # Vercel
 .vercel/
 .vercel
+.env*.local
+
+# Test coverage
+coverage/

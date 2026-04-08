@@ -1,18 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useHousehold } from '../hooks/useHousehold'
+import { groupByCategory, formatForClipboard, type ListItem } from '../lib/finaliseUtils'
 import AutomationLogViewer from '../components/AutomationLogViewer'
 import type { Database } from '../types/database'
 
 type Session = Database['public']['Tables']['weekly_sessions']['Row']
-
-interface ListItem {
-  name: string
-  quantity: string | number
-  unit: string
-  source: string
-  category?: string
-}
 
 export default function FinalisePage() {
   const { householdId, loading: hhLoading } = useHousehold()
@@ -44,18 +37,10 @@ export default function FinalisePage() {
   const finalList = (session?.final_list as unknown as ListItem[]) ?? []
 
   // Group by category for display
-  const grouped = finalList.reduce(
-    (acc, item) => {
-      const cat = item.category ?? 'Other'
-      if (!acc[cat]) acc[cat] = []
-      acc[cat].push(item)
-      return acc
-    },
-    {} as Record<string, ListItem[]>,
-  )
+  const grouped = groupByCategory(finalList)
 
   const copyToClipboard = async () => {
-    const text = finalList.map((i) => `${i.quantity} ${i.unit} ${i.name}`).join('\n')
+    const text = formatForClipboard(finalList)
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)

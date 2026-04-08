@@ -3,16 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { supabase } from '../lib/supabase'
 import { useHousehold } from '../hooks/useHousehold'
+import { computeSessionStats } from '../lib/dashboardUtils'
 import type { Database } from '../types/database'
 
 type Session = Database['public']['Tables']['weekly_sessions']['Row']
-
-interface ListItem {
-  name: string
-  quantity: string | number
-  unit: string
-  category?: string
-}
 
 const PIE_COLORS = [
   '#2B5E3F', '#4A8A62', '#D97706', '#1D4ED8', '#C0392B',
@@ -49,43 +43,9 @@ export default function DashboardPage() {
 
   // Stats
   const totalSessions = sessions.length
-  const completedSessions = sessions.filter(
-    (s) => s.status === 'finalised' || s.status === 'dispatched',
-  )
-  const allFinalItems = completedSessions.flatMap(
-    (s) => (s.final_list as unknown as ListItem[]) ?? [],
-  )
-  const avgItems =
-    completedSessions.length > 0
-      ? Math.round(allFinalItems.length / completedSessions.length)
-      : 0
-
-  // Category distribution from all final lists
-  const categoryCount = allFinalItems.reduce(
-    (acc, item) => {
-      const cat = item.category ?? 'Other'
-      acc[cat] = (acc[cat] ?? 0) + 1
-      return acc
-    },
-    {} as Record<string, number>,
-  )
-  const pieData = Object.entries(categoryCount)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 10)
-
-  // Most common items
-  const itemFrequency = allFinalItems.reduce(
-    (acc, item) => {
-      const key = item.name.toLowerCase()
-      acc[key] = { name: item.name, count: (acc[key]?.count ?? 0) + 1 }
-      return acc
-    },
-    {} as Record<string, { name: string; count: number }>,
-  )
-  const topItems = Object.values(itemFrequency)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
+  const stats = computeSessionStats(sessions)
+  const pieData = stats.categoryDistribution
+  const topItems = stats.itemFrequency
 
   if (hhLoading || loading) {
     return (
@@ -115,11 +75,11 @@ export default function DashboardPage() {
           <div className="text-xs text-text-light">Total sessions</div>
         </div>
         <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="font-serif text-2xl text-text">{completedSessions.length}</div>
+          <div className="font-serif text-2xl text-text">{stats.completedCount}</div>
           <div className="text-xs text-text-light">Completed</div>
         </div>
         <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="font-serif text-2xl text-text">{avgItems}</div>
+          <div className="font-serif text-2xl text-text">{stats.avgItems}</div>
           <div className="text-xs text-text-light">Avg items per shop</div>
         </div>
       </div>
@@ -178,7 +138,7 @@ export default function DashboardPage() {
       ) : (
         <div className="flex flex-col gap-1">
           {sessions.map((session) => {
-            const itemCount = ((session.final_list as unknown as ListItem[]) ?? []).length
+            const itemCount = ((session.final_list as unknown as unknown[]) ?? []).length
             return (
               <div
                 key={session.id}
