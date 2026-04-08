@@ -1,10 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useHousehold } from '../hooks/useHousehold'
-import { generateFinalList, type ListItem } from '../lib/reviewUtils'
-import type { Database } from '../types/database'
-
-type Session = Database['public']['Tables']['weekly_sessions']['Row']
+import { useSession } from '../contexts/SessionContext'
+import { generateFinalList as computeFinalList, type ListItem } from '../lib/reviewUtils'
 
 const SOURCE_COLORS: Record<string, string> = {
   meal: 'bg-blue-light text-blue',
@@ -13,39 +11,19 @@ const SOURCE_COLORS: Record<string, string> = {
 }
 
 export default function ReviewPage() {
-  const { householdId, loading: hhLoading } = useHousehold()
-  const [session, setSession] = useState<Session | null>(null)
+  const { householdId } = useHousehold()
+  const { session, loading, refreshSession } = useSession()
   const [mergedList, setMergedList] = useState<ListItem[]>([])
   const [pantryExclusions, setPantryExclusions] = useState<string[]>([])
   const [droppedDuplicates, setDroppedDuplicates] = useState<ListItem[]>([])
-  const [loading, setLoading] = useState(true)
   const [showExclusions, setShowExclusions] = useState(false)
   const [showDuplicates, setShowDuplicates] = useState(false)
   const [error, setError] = useState('')
-
-  const fetchSession = useCallback(async () => {
-    if (!householdId) return
-    const { data, error } = await supabase
-      .from('weekly_sessions')
-      .select('*')
-      .eq('household_id', householdId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (error) setError(error.message)
-    else setSession(data)
-    setLoading(false)
-  }, [householdId])
-
-  useEffect(() => {
-    if (!hhLoading && householdId) fetchSession()
-  }, [hhLoading, householdId, fetchSession])
 
   const handleGenerateFinalList = async () => {
     if (!session || !householdId) return
     setError('')
 
-    // Gather all sources
     const mealItems = ((session.meal_ingredients as unknown as ListItem[]) ?? []).map((i) => ({
       ...i,
       source: 'meal',
@@ -55,7 +33,6 @@ export default function ReviewPage() {
       source: i.source ?? 'other_items',
     }))
 
-    // Fetch pantry items for exclusion
     const { data: pantry } = await supabase
       .from('pantry_items')
       .select('name')
@@ -63,13 +40,12 @@ export default function ReviewPage() {
     const pantryNames = (pantry ?? []).map((p) => p.name.toLowerCase())
 
     const { finalList, pantryExclusions: excluded, droppedDuplicates: duplicates } =
-      generateFinalList(mealItems, otherItems, pantryNames)
+      computeFinalList(mealItems, otherItems, pantryNames)
 
     setMergedList(finalList)
     setPantryExclusions(excluded)
     setDroppedDuplicates(duplicates)
 
-    // Save to session
     await supabase
       .from('weekly_sessions')
       .update({
@@ -79,7 +55,7 @@ export default function ReviewPage() {
       })
       .eq('id', session.id)
 
-    fetchSession()
+    refreshSession()
   }
 
   const removeItem = (index: number) => {
@@ -95,7 +71,7 @@ export default function ReviewPage() {
     if (error) setError(error.message)
   }
 
-  if (hhLoading || loading) {
+  if (loading) {
     return <div className="text-sm text-text-mid">Loading review...</div>
   }
 

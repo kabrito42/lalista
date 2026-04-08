@@ -1,38 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { useHousehold } from '../hooks/useHousehold'
+import { useSession } from '../contexts/SessionContext'
 import { groupByCategory, formatForClipboard, type ListItem } from '../lib/finaliseUtils'
 import AutomationLogViewer from '../components/AutomationLogViewer'
-import type { Database } from '../types/database'
-
-type Session = Database['public']['Tables']['weekly_sessions']['Row']
 
 export default function FinalisePage() {
-  const { householdId, loading: hhLoading } = useHousehold()
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { session, loading, refreshSession, advanceSession } = useSession()
   const [copied, setCopied] = useState(false)
   const [dispatching, setDispatching] = useState(false)
   const [showLogs, setShowLogs] = useState(false)
   const [error, setError] = useState('')
-
-  const fetchSession = useCallback(async () => {
-    if (!householdId) return
-    const { data, error } = await supabase
-      .from('weekly_sessions')
-      .select('*')
-      .eq('household_id', householdId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (error) setError(error.message)
-    else setSession(data)
-    setLoading(false)
-  }, [householdId])
-
-  useEffect(() => {
-    if (!hhLoading && householdId) fetchSession()
-  }, [hhLoading, householdId, fetchSession])
 
   const finalList = (session?.final_list as unknown as ListItem[]) ?? []
 
@@ -48,12 +25,11 @@ export default function FinalisePage() {
 
   const markFinalised = async () => {
     if (!session) return
-    const { error } = await supabase.rpc('advance_session', { p_session_id: session.id })
-    if (error) setError(error.message)
-    else fetchSession()
+    await advanceSession()
+    refreshSession()
   }
 
-  if (hhLoading || loading) {
+  if (loading) {
     return <div className="text-sm text-text-mid">Loading...</div>
   }
 
