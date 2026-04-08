@@ -12,13 +12,39 @@ Three-tier: **Vercel** (React frontend) + **Supabase** (database, auth, edge fun
 
 ```
 lalista/
-  app/          React 19 + TypeScript + Vite 6 frontend (deployed to Vercel)
+  app/          React 19 + TypeScript + Vite 6 SPA (deployed to Vercel)
   agent/        Python agent — Playwright browser automation (runs locally, never deployed)
   supabase/     Supabase CLI project — migrations, edge functions, seed data
-  docs/         Product spec, technical summary, architecture docs
+  scripts/      Deploy scripts
 ```
 
-## Development Setup
+### Session State Machine
+
+The core workflow is a weekly session that progresses linearly through 6 states, enforced at the DB level via a PL/pgSQL trigger (`enforce_session_transition`):
+
+```
+draft → planning → picking → review → finalised → dispatched
+```
+
+Each state maps to a frontend page: Session → Meals → Picker → Review → Finalise. The `advance_session(session_id)` RPC function moves a session to the next valid status. Sessions store intermediate data as JSONB columns (meal_ingredients, confirmed_other_items, final_list).
+
+### Auth & Household Provisioning
+
+On signup, a DB trigger (`on_auth_user_created`) automatically creates a household and a profile for the new user. All subsequent data is scoped to that household — there is no user-level data isolation, only household-level.
+
+### RLS Pattern
+
+All RLS policies use `current_household_id()` (a `SECURITY DEFINER` function) to look up the current user's household. This avoids infinite recursion that would occur if RLS policies on `profiles` queried `profiles` directly.
+
+### Data Fetching Pattern
+
+Pages follow a consistent pattern: get `householdId` from the `useHousehold()` hook, then fetch with `useCallback` + `useEffect`, filtering all queries by `.eq('household_id', householdId)`. No data-fetching library — all direct Supabase client calls.
+
+### Supabase Client
+
+Singleton in `app/src/lib/supabase.ts`, configured via `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` env vars.
+
+## Development Commands
 
 ### Frontend (`app/`)
 
@@ -28,7 +54,8 @@ npm install
 npm run dev          # Vite dev server on localhost:5173
 npm run build        # tsc -b && vite build
 npm run lint         # ESLint
-npm run format       # Prettier
+npm run format       # Prettier (100 char width, no semis, single quotes)
+npm run gen:types    # Regenerate Supabase types (needs SUPABASE_PROJECT_REF env var)
 ```
 
 ### Supabase (`supabase/`)
@@ -46,10 +73,8 @@ Copy `.env.local.example` to `.env.local` and fill in Supabase URL/anon key from
 
 ```bash
 cd agent
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-playwright install
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt && playwright install
 python agent.py
 ```
 
@@ -63,16 +88,18 @@ The agent is **local-only** — it reads lists from Supabase and drives a browse
 - React 19 with functional components
 - **Tailwind CSS 4** with CSS-first `@theme` config in `src/index.css` (no `tailwind.config.ts`)
 - Design tokens mapped from weeklyshop: DM Sans (body), DM Serif Display (headings), DM Mono (code)
-- ESLint 9 flat config + Prettier (semi: false, singleQuote, trailingComma: all)
+- ESLint 9 flat config + Prettier (semi: false, singleQuote, trailingComma: all, printWidth: 100)
 - File naming: `PascalCase.tsx` for components, `camelCase.ts` for utilities — match existing patterns
+- Database types are auto-generated in `app/src/types/database.ts` — regenerate with `npm run gen:types`, do not edit manually
 
 ### Database
 
-- **Row Level Security (RLS)** on all tables
+- **Row Level Security (RLS)** on all tables — use `current_household_id()` helper in policies
 - **UUID primary keys** (`gen_random_uuid()`)
 - **Household scoping** — all user-facing data scoped to a household, not individual users
 - Migrations in `supabase/migrations/` — use `supabase migration new <name>`
 - Seed data in `supabase/seed.sql`
+- **pg_trgm** extension enabled — GIN indexes on searchable text fields for fuzzy matching
 
 ### Edge Functions
 
@@ -89,7 +116,7 @@ The agent is **local-only** — it reads lists from Supabase and drives a browse
 ### Commands
 
 - "commit and publish" = commit + push + Vercel preview deploy
-- "commit and deploy" = commit + push + Vercel production deploy
+- "commit and deploy" = stage task-relevant files first (`git add <files>`), then run `bash scripts/deploy.sh "your commit message"`. The script requires staged changes and a commit message — it will not run `git add` for you.
 
 ## Git Workflow
 
@@ -117,9 +144,5 @@ No test framework configured yet. Add `vitest` when unit tests are needed.
 
 - Workspace: `90161526129`
 - Space: `90166604892` (LaLista)
+- Backlog list: `901614384227`
 - Status flow: `Ready for Build` -> `In Progress` -> `Review`
-
-## Documentation
-
-- Product specification: `docs/product-specification.md` (to be created)
-- Technical summary: `docs/technical-summary.md` (to be created)

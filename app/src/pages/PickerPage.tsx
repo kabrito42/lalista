@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useHousehold } from '../hooks/useHousehold'
+import { useSession } from '../contexts/SessionContext'
 import { buildInitialSelections, type Selection } from '../lib/pickerUtils'
 import type { Database } from '../types/database'
 
 type LonglistItem = Database['public']['Tables']['longlist_items']['Row']
 type Category = Database['public']['Tables']['categories']['Row']
-type Session = Database['public']['Tables']['weekly_sessions']['Row']
 
 export default function PickerPage() {
-  const { householdId, loading: hhLoading } = useHousehold()
+  const { householdId } = useHousehold()
+  const { session, loading: sessionLoading } = useSession()
   const [items, setItems] = useState<LonglistItem[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [session, setSession] = useState<Session | null>(null)
   const [selections, setSelections] = useState<Map<string, Selection>>(new Map())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -20,20 +20,12 @@ export default function PickerPage() {
 
   const fetchAll = useCallback(async () => {
     if (!householdId) return
-    const [itemsRes, catsRes, sessionRes] = await Promise.all([
+    const [itemsRes, catsRes] = await Promise.all([
       supabase.from('longlist_items').select('*').eq('household_id', householdId).order('name'),
       supabase.from('categories').select('*').eq('household_id', householdId).order('sort_order'),
-      supabase
-        .from('weekly_sessions')
-        .select('*')
-        .eq('household_id', householdId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
     ])
     setItems(itemsRes.data ?? [])
     setCategories(catsRes.data ?? [])
-    setSession(sessionRes.data)
 
     // Pre-select staple items
     setSelections(buildInitialSelections(itemsRes.data ?? [], catsRes.data ?? []))
@@ -41,8 +33,8 @@ export default function PickerPage() {
   }, [householdId])
 
   useEffect(() => {
-    if (!hhLoading && householdId) fetchAll()
-  }, [hhLoading, householdId, fetchAll])
+    if (!sessionLoading && householdId) fetchAll()
+  }, [sessionLoading, householdId, fetchAll])
 
   const toggleItem = (item: LonglistItem) => {
     setSelections((prev) => {
@@ -96,7 +88,7 @@ export default function PickerPage() {
     items: items.filter((i) => i.category_id === cat.id),
   }))
 
-  if (hhLoading || loading) {
+  if (sessionLoading || loading) {
     return <div className="text-sm text-text-mid">Loading picker...</div>
   }
 

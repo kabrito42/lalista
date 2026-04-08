@@ -181,7 +181,102 @@ Current seed data covers categories, pantry, and longlist — but nothing for re
 
 ---
 
-## 7. Conventions
+## 7. Verification Gate and Release Testing
+
+### Post-Deploy Verification (Test Lead)
+
+After every commit and deploy, the Test Lead independently verifies each ticket's acceptance criteria against the code and deployed app.
+
+**What the Test Lead verifies:**
+- `npm run test:ci` passes (unit, system, E2E)
+- `npm run build` and `npm run lint` pass
+- Code changes satisfy each AC (code review against ticket)
+- Business logic correctness confirmed by test results
+- No regressions in existing test suite
+- Database migrations applied correctly (where applicable)
+
+**What requires manual verification by Keith:**
+- Visual appearance in browser
+- UX flow and feel
+- Real authentication (signup, login, Google SSO)
+- Real Coles automation behaviour
+- Mobile device and responsive testing
+- Cross-browser behaviour
+- Accessibility with assistive technology
+- "Does this make sense to a real user?"
+
+**Per-ticket verification comment format:**
+```
+## Verification — [ticket name]
+
+### Automated checks
+- [x] npm run test:ci — PASS (N tests, 0 failures)
+- [x] npm run build — PASS
+- [x] npm run lint — PASS
+
+### AC verification
+- [x] AC1 — Verified: [how]
+- [x] AC2 — Verified: [how]
+- [ ] AC3 — MANUAL CHECK REQUIRED: [specific steps]
+
+### Verdict
+[All verified / N gaps remaining for manual check]
+```
+
+### Release Verification Ticket (Consolidated)
+
+After the Test Lead completes verification of all individual tickets in a deploy, the workflow is:
+
+1. **Close individual tickets** — each ticket that passes Test Lead verification is moved to `review` (= deployed and verified)
+2. **Create one release verification ticket** — a single new ticket consolidating all manual test steps from every ticket in that deploy
+3. **Group by business flow** — manual tests are organised by how Keith would actually use the app, not by individual ticket. One test flow may cover changes from multiple tickets
+4. **Keith works one ticket** — instead of opening 6 tickets to find scattered test instructions, Keith has one cohesive test plan
+
+**Release verification ticket format:**
+
+```
+Title: Release Verification — [date] — [summary of what shipped]
+
+## What shipped
+- [ticket link] — one-line summary
+- [ticket link] — one-line summary
+
+## Manual test plan
+
+### Flow 1: [Business flow name, e.g. "Weekly session lifecycle"]
+Covers: [ticket refs]
+1. Step — expected result
+2. Step — expected result
+3. Step — expected result
+
+### Flow 2: [Business flow name, e.g. "Recipe management"]
+Covers: [ticket refs]
+1. Step — expected result
+2. Step — expected result
+
+## Environment
+- URL: [production URL]
+- Test account: [if applicable]
+
+## Verdict
+[ ] All flows pass — close this ticket
+[ ] Issues found — raise defect tickets
+```
+
+**Lifecycle of a release verification ticket:**
+```
+Test Lead creates → "review" status
+  ↓
+Keith executes manual tests
+  ↓  All flows pass
+Keith closes ticket
+  ↓  Issues found
+Keith raises defect tickets, closes this one
+```
+
+---
+
+## 8. Conventions
 
 - Test files live alongside source: `ComponentName.test.tsx`, `utilityName.test.ts`
 - Use `describe` / `it` blocks with clear, behaviour-focused descriptions
@@ -192,7 +287,7 @@ Current seed data covers categories, pantry, and longlist — but nothing for re
 
 ---
 
-## 8. Out of Scope
+## 9. Out of Scope
 
 - **Python agent testing** — the agent is local-only and has its own runtime. Test strategy for the agent is a separate concern.
 - **Performance/load testing** — not warranted at current scale.
@@ -201,7 +296,7 @@ Current seed data covers categories, pantry, and longlist — but nothing for re
 
 ---
 
-## 9. Success Criteria
+## 10. Success Criteria
 
 | Milestone | Definition of Done |
 |-----------|-------------------|
@@ -212,7 +307,7 @@ Current seed data covers categories, pantry, and longlist — but nothing for re
 
 ---
 
-## 10. Risks and Mitigations
+## 11. Risks and Mitigations
 
 | Risk | Mitigation |
 |------|-----------|

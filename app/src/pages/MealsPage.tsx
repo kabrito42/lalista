@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useHousehold } from '../hooks/useHousehold'
+import { useSession } from '../contexts/SessionContext'
 import type { Database } from '../types/database'
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
-type Session = Database['public']['Tables']['weekly_sessions']['Row']
 type WeeklyMeal = Database['public']['Tables']['weekly_meals']['Row']
 
 export default function MealsPage() {
-  const { householdId, loading: hhLoading } = useHousehold()
+  const { householdId } = useHousehold()
+  const { session, loading: sessionLoading, refreshSession } = useSession()
   const [recipes, setRecipes] = useState<Recipe[]>([])
-  const [session, setSession] = useState<Session | null>(null)
   const [meals, setMeals] = useState<WeeklyMeal[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -18,35 +18,28 @@ export default function MealsPage() {
   const fetchAll = useCallback(async () => {
     if (!householdId) return
 
-    const [recipesRes, sessionRes] = await Promise.all([
-      supabase.from('recipes').select('*').eq('household_id', householdId).order('title'),
-      supabase
-        .from('weekly_sessions')
-        .select('*')
-        .eq('household_id', householdId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ])
+    const { data, error } = await supabase
+      .from('recipes')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('title')
+    if (error) setError(error.message)
+    setRecipes(data ?? [])
 
-    if (recipesRes.error) setError(recipesRes.error.message)
-    setRecipes(recipesRes.data ?? [])
-    setSession(sessionRes.data)
-
-    if (sessionRes.data) {
-      const { data } = await supabase
+    if (session) {
+      const { data: mealsData } = await supabase
         .from('weekly_meals')
         .select('*')
-        .eq('session_id', sessionRes.data.id)
-      setMeals(data ?? [])
+        .eq('session_id', session.id)
+      setMeals(mealsData ?? [])
     }
 
     setLoading(false)
-  }, [householdId])
+  }, [householdId, session])
 
   useEffect(() => {
-    if (!hhLoading && householdId) fetchAll()
-  }, [hhLoading, householdId, fetchAll])
+    if (!sessionLoading && householdId) fetchAll()
+  }, [sessionLoading, householdId, fetchAll])
 
   const addMeal = async (recipeId: string) => {
     if (!session) return
@@ -68,7 +61,6 @@ export default function MealsPage() {
     if (!session || meals.length === 0) return
     setError('')
 
-    // Fetch ingredients for all selected recipes
     const recipeIds = meals.map((m) => m.recipe_id)
     const { data: ingredients, error: ingError } = await supabase
       .from('recipe_ingredients')
@@ -94,12 +86,15 @@ export default function MealsPage() {
       .eq('id', session.id)
 
     if (error) setError(error.message)
-    else fetchAll()
+    else {
+      await refreshSession()
+      fetchAll()
+    }
   }
 
   const selectedRecipeIds = new Set(meals.map((m) => m.recipe_id))
 
-  if (hhLoading || loading) {
+  if (sessionLoading || loading) {
     return <div className="text-sm text-text-mid">Loading meals...</div>
   }
 

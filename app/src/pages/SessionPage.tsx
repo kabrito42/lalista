@@ -1,10 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useHousehold } from '../hooks/useHousehold'
+import { useSession } from '../contexts/SessionContext'
 import { parseFreeformItems } from '../lib/sessionUtils'
-import type { Database } from '../types/database'
-
-type Session = Database['public']['Tables']['weekly_sessions']['Row']
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   draft: { label: 'Draft', color: 'bg-surface-alt text-text-mid' },
@@ -16,29 +14,12 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 }
 
 export default function SessionPage() {
-  const { householdId, loading: hhLoading } = useHousehold()
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { householdId } = useHousehold()
+  const { session, loading, error: sessionError, refreshSession, advanceSession, setSession } = useSession()
   const [freeformText, setFreeformText] = useState('')
   const [error, setError] = useState('')
 
-  const fetchSession = useCallback(async () => {
-    if (!householdId) return
-    const { data, error } = await supabase
-      .from('weekly_sessions')
-      .select('*')
-      .eq('household_id', householdId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (error) setError(error.message)
-    else setSession(data)
-    setLoading(false)
-  }, [householdId])
-
-  useEffect(() => {
-    if (!hhLoading && householdId) fetchSession()
-  }, [hhLoading, householdId, fetchSession])
+  const displayError = error || sessionError
 
   const createSession = async () => {
     if (!householdId) return
@@ -50,18 +31,6 @@ export default function SessionPage() {
       .single()
     if (error) setError(error.message)
     else setSession(data)
-  }
-
-  const advanceStatus = async () => {
-    if (!session) return
-    setError('')
-    const { data, error } = await supabase.rpc('advance_session', {
-      p_session_id: session.id,
-    })
-    if (error) setError(error.message)
-    else {
-      setSession((s) => (s ? { ...s, status: data as Session['status'] } : s))
-    }
   }
 
   const saveFreeformItems = async () => {
@@ -79,11 +48,11 @@ export default function SessionPage() {
     if (error) setError(error.message)
     else {
       setFreeformText('')
-      fetchSession()
+      refreshSession()
     }
   }
 
-  if (hhLoading || loading) {
+  if (loading) {
     return <div className="text-sm text-text-mid">Loading session...</div>
   }
 
@@ -92,7 +61,7 @@ export default function SessionPage() {
       <div>
         <h2 className="mb-4 font-serif text-xl text-text">Weekly Session</h2>
         <p className="mb-4 text-sm text-text-mid">No active session. Start a new one for this week.</p>
-        {error && <div className="mb-4 rounded-lg border border-red/20 bg-red-light px-4 py-2 text-sm text-red">{error}</div>}
+        {displayError && <div className="mb-4 rounded-lg border border-red/20 bg-red-light px-4 py-2 text-sm text-red">{displayError}</div>}
         <button
           onClick={createSession}
           className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90"
@@ -114,7 +83,7 @@ export default function SessionPage() {
         </span>
       </div>
 
-      {error && <div className="mb-4 rounded-lg border border-red/20 bg-red-light px-4 py-2 text-sm text-red">{error}</div>}
+      {displayError && <div className="mb-4 rounded-lg border border-red/20 bg-red-light px-4 py-2 text-sm text-red">{displayError}</div>}
 
       {/* Session info */}
       <div className="mb-6 rounded-xl border border-border bg-surface p-4">
@@ -174,7 +143,7 @@ export default function SessionPage() {
       {/* Advance button */}
       {session.status !== 'dispatched' && (
         <button
-          onClick={advanceStatus}
+          onClick={advanceSession}
           className="rounded-lg border border-accent bg-accent-light px-4 py-2 text-sm font-medium text-accent hover:bg-accent hover:text-white"
         >
           Advance to next step

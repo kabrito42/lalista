@@ -195,79 +195,85 @@ export default function RecipesPage() {
       {/* Modal form */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-          <div className="w-full max-w-lg rounded-xl bg-surface p-6 shadow-lg">
-            <h3 className="mb-4 font-serif text-lg">
-              {editing ? 'Edit Recipe' : 'New Recipe'}
-            </h3>
+          <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-xl bg-surface shadow-lg">
+            <div className="shrink-0 border-b border-border px-6 py-4">
+              <h3 className="font-serif text-lg">
+                {editing ? 'Edit Recipe' : 'New Recipe'}
+              </h3>
+            </div>
 
-            <div className="flex flex-col gap-3">
-              <input
-                placeholder="Title *"
-                value={form.title ?? ''}
-                onChange={(e) => setField('title', e.target.value)}
-                className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-              />
-              <div className="grid grid-cols-3 gap-3">
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <div className="flex flex-col gap-3">
                 <input
-                  type="number"
-                  placeholder="Servings"
-                  value={form.servings ?? ''}
-                  onChange={(e) => setField('servings', e.target.value ? +e.target.value : null)}
+                  placeholder="Title *"
+                  value={form.title ?? ''}
+                  onChange={(e) => setField('title', e.target.value)}
                   className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                 />
+                <div className="grid grid-cols-3 gap-3">
+                  <input
+                    type="number"
+                    placeholder="Servings"
+                    value={form.servings ?? ''}
+                    onChange={(e) => setField('servings', e.target.value ? +e.target.value : null)}
+                    className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Prep (min)"
+                    value={form.prep_time ?? ''}
+                    onChange={(e) => setField('prep_time', e.target.value ? +e.target.value : null)}
+                    className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Cook (min)"
+                    value={form.cook_time ?? ''}
+                    onChange={(e) => setField('cook_time', e.target.value ? +e.target.value : null)}
+                    className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                  />
+                </div>
                 <input
-                  type="number"
-                  placeholder="Prep (min)"
-                  value={form.prep_time ?? ''}
-                  onChange={(e) => setField('prep_time', e.target.value ? +e.target.value : null)}
+                  placeholder="Source URL"
+                  value={form.source_url ?? ''}
+                  onChange={(e) => setField('source_url', e.target.value || null)}
                   className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                 />
-                <input
-                  type="number"
-                  placeholder="Cook (min)"
-                  value={form.cook_time ?? ''}
-                  onChange={(e) => setField('cook_time', e.target.value ? +e.target.value : null)}
+                <textarea
+                  placeholder="Directions"
+                  rows={4}
+                  value={form.directions ?? ''}
+                  onChange={(e) => setField('directions', e.target.value || null)}
+                  className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+                <textarea
+                  placeholder="Notes"
+                  rows={2}
+                  value={form.notes ?? ''}
+                  onChange={(e) => setField('notes', e.target.value || null)}
                   className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                 />
               </div>
-              <input
-                placeholder="Source URL"
-                value={form.source_url ?? ''}
-                onChange={(e) => setField('source_url', e.target.value || null)}
-                className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-              />
-              <textarea
-                placeholder="Directions"
-                rows={4}
-                value={form.directions ?? ''}
-                onChange={(e) => setField('directions', e.target.value || null)}
-                className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-              />
-              <textarea
-                placeholder="Notes"
-                rows={2}
-                value={form.notes ?? ''}
-                onChange={(e) => setField('notes', e.target.value || null)}
-                className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-              />
+
+              {editing && <RecipeIngredients recipeId={editing.id} />}
             </div>
 
-            {editing && <RecipeIngredients recipeId={editing.id} />}
-
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => setShowForm(false)}
-                className="rounded-lg border border-border px-4 py-2 text-sm text-text-mid hover:bg-surface-alt"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving || !form.title?.trim()}
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : editing ? 'Update' : 'Create'}
-              </button>
+            <div className="shrink-0 border-t border-border px-6 py-4">
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="rounded-lg border border-border px-4 py-2 text-sm text-text-mid hover:bg-surface-alt"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !form.title?.trim()}
+                  className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : editing ? 'Update' : 'Create'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
